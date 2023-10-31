@@ -7,14 +7,17 @@
 using namespace std;
 vector<vector<int>> LerGrafo(const string &nomeArquivo, int &numVertices);
 vector<int> EncontrarCliqueMaximo(vector<vector<int>> &grafo, int numVertices);
+void EncontraClique(vector<vector<int>> &grafo, vector<int> &P, vector<int> &X, vector<int> &R);
 
 int main()
 {
   int numVertices = 0;
   string nomeArquivo;
-  
+
   vector<vector<int>> grafo = LerGrafo(nomeArquivo, numVertices);
+  
   vector<int> cliqueMaxima = EncontrarCliqueMaximo(grafo, numVertices);
+  
   cout << "[";
   for (auto elemento : cliqueMaxima)
   {
@@ -27,14 +30,14 @@ int main()
 // Função para ler o grafo a partir do arquivo de entrada
 vector<vector<int>> LerGrafo(const string &nomeArquivo, int &numVertices)
 {
-  //ifstream arquivo(nomeArquivo);
+  // ifstream arquivo(nomeArquivo);
   int numArestas;
-  //arquivo >> numVertices >> numArestas;
+  // arquivo >> numVertices >> numArestas;
 
   cin >> numVertices >> numArestas;
   cout << "Num Arestas: " << numArestas << endl;
   vector<vector<int>> grafo(numVertices, vector<int>(numVertices, 0));
-
+  cout << "Li grafo \n";
   for (int i = 0; i < (numArestas - 1); ++i)
   {
     int u, v;
@@ -43,66 +46,62 @@ vector<vector<int>> LerGrafo(const string &nomeArquivo, int &numVertices)
     grafo[v - 1][u - 1] = 1; // O grafo é não direcionado
   }
 
-  //arquivo.close();
-
+  // arquivo.close();
+  cout << "Cosntrui a matriz \n";
   return grafo;
 }
-vector<int> EncontrarCliqueMaximo(vector<vector<int>> &grafo, int numVertices)
+
+vector<int> EncontrarCliqueMaximo(vector<vector<int>>& grafo, int numVertices)
 {
-  vector<int> cliqueMaxima, candidatos, novosCandidatos;
-  int v = 0;
-  bool podeAdicionar;
+  cout << "Entrei em 'EncontrarCliqueMaximo' \n";
+  vector<int> P; // Conjunto dos candidatos
+  vector<int> X; // COnjunto do Não Candidatos
+  vector<int> R; // Conjunto resposta
 
-  cout << "Candidatos: ";
-  for (int i = 0; i < (numVertices - 1); i++)
+  for (int i = 0; i < numVertices; i++)
   {
-    int vertice = i+1;
-    candidatos.push_back(vertice);
-    cout << candidatos[i] << " ";
+    P.push_back(i); // Preenche a lista de candidatos
   }
-    cout << endl;
-
-  while (candidatos.size() > 0)
+  cout << "Preenchi candidatos  - Tamanho: " << P.size() << endl;
+  EncontraClique(grafo, P, X, R);
+  return R;
+}
+void EncontraClique(vector<vector<int>>& grafo, vector<int> &P, vector<int> &X, vector<int> &R)
+{
+  if (P.empty())
   {
-    v = candidatos.back();
-    candidatos.pop_back();
-    podeAdicionar = true;
+    return;
+  }
 
-    for (int u : cliqueMaxima)
-    { 
-      cout << "Grafo[" << u << "][" << v <<"]: "
-           << grafo[u][v] << endl;
-      if (grafo[u][v] == 0)
-      {
-        podeAdicionar = false;
-        break;
-      }
-    }
-
-    if (podeAdicionar == true)
+  int v = P.back(); // Vértice de referência
+  P.pop_back();
+  cout << "Numero de candidatos: " << P.size() << endl;
+  for (int i = 0; i < P.size() - 1; i++)
+  {
+    int u = P[i]; // Vértice Candidato
+    if (grafo[v][u] == 1)
     {
-      cliqueMaxima.push_back(v);
-      vector<int> novosCandidatos;
+      R.push_back(u);         // Adiciona o candidato ao conjunto solução
+      cout << "Tamanho R: " << R.size() << endl;
+      P.erase(P.begin() + i); // Remove o candidato da lista de candidatos
+      /*
+        Utilizando a estratégia do algoritmo Bron-Kerbosch, chama-se recursivamente a
+        fução EncontraClique afim de percorrere todos os vértices candidatos.
+      */
+      EncontraClique(grafo, P, X, R);
 
-      for (int u : candidatos)
-      {
-        bool adjacenteATodos = true;
+      /*
+        Ao fim da recurção, um clique estará formado, então deve-se analisar novamente
+        o gráfo afim de eoncontrar outros cliques. Portanto:
+      */
 
-        for (int c : cliqueMaxima)
-        {
-          if (grafo[u][c] == 0)
-          {
-            adjacenteATodos = false;
-            break;
-          }
-        }
-        if (adjacenteATodos == true)
-        {
-          novosCandidatos.push_back(u);
-        }
-      }
-      candidatos = novosCandidatos;
+      R.pop_back();               // Remove o vértice de referência da co conjunto solução
+      P.insert(P.begin() + i, u); // Adiciona de volta o vértice candidato.
+    }
+    else
+    {                         // Caso o vértice candidato não seja adjacente ao vértice de referência
+      X.push_back(u);         // Adiciona o candidato ao conjunto dos Não Adjacentes
+      P.erase(P.begin() + i); // Remove o candidato da lita de candidatos.
     }
   }
-  return cliqueMaxima;
 }
